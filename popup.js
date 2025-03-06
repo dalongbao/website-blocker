@@ -1,189 +1,233 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Global variables
+let timerInterval;
+let timerSeconds = 0;
+
+// Load sites from storage when popup opens
+function loadSites() {
+  chrome.storage.sync.get(['blockedSites'], function(result) {
+    const sites = result.blockedSites || [];
+    
+    // Clear current list
+    document.getElementById('sites-list').innerHTML = '';
+    
+    // Add each site to the UI
+    sites.forEach(site => {
+      addSiteToUI(site.url, site.isBlocked);
+    });
+    
+    // Update site count
+    updateSiteCount();
+  });
+}
+
+// Save sites to storage
+function saveSites() {
+  const sites = [];
+  const siteRows = document.querySelectorAll('.site-row');
+  
+  siteRows.forEach(row => {
+    const url = row.dataset.site;
+    const isBlocked = row.querySelector('.toggle-switch').checked;
+    sites.push({ url, isBlocked });
+  });
+  
+  chrome.storage.sync.set({ 'blockedSites': sites }, function() {
+    console.log('Site settings saved');
+  });
+}
+
+// Function to start/reset timer
+function startTimer() {
+  clearInterval(timerInterval);
+  timerSeconds = 0;
+  updateTimerDisplay();
+  
+  timerInterval = setInterval(function() {
+    timerSeconds++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+// Update timer display
+function updateTimerDisplay() {
+  const minutes = Math.floor(timerSeconds / 60);
+  const seconds = timerSeconds % 60;
+  document.getElementById('timer').textContent = 
+    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Update digital clock
+function updateClock() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+// Update site count in status
+function updateSiteCount() {
+  const siteCount = document.querySelectorAll('.site-row').length;
+  document.getElementById('status').textContent = 
+    `SYSTEM ACTIVE - ${siteCount} SITES MONITORED`;
+}
+
+// Format URL for proper site blocking
+function formatUrlForBlocking(url) {
+  // If it already has a wildcard or protocol, leave it as is
+  if (url.includes('*') || url.includes('://')) {
+    return url;
+  }
+  
+  // Otherwise, make it a proper wildcard pattern
+  return `*://*.${url}/*`;
+}
+
+// Add a site to UI (doesn't save to storage)
+function addSiteToUI(siteName, isBlocked = true) {
   const sitesList = document.getElementById('sites-list');
+  
+  // Display a cleaner version for the UI
+  const displayName = siteName.replace(/^\*:\/\/\*\./g, '').replace(/\/\*$/g, '');
+    
+  // Create elements
+  const newRow = document.createElement('div');
+  newRow.className = 'site-row';
+  newRow.dataset.site = siteName;
+  
+  const siteNameDiv = document.createElement('div');
+  siteNameDiv.className = 'site-name';
+  siteNameDiv.textContent = displayName;
+  
+  const statusIndicator = document.createElement('div');
+  statusIndicator.className = 'status-indicator';
+  
+  const statusLed = document.createElement('div');
+  statusLed.className = isBlocked ? 'status-led red' : 'status-led green';
+  
+  const statusText = document.createElement('div');
+  statusText.className = 'status-text';
+  statusText.textContent = isBlocked ? 'BLOCKED' : 'ALLOWED';
+  
+  const switchLabel = document.createElement('label');
+  switchLabel.className = 'switch';
+  
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = isBlocked;
+  checkbox.className = 'toggle-switch';
+  checkbox.addEventListener('change', toggleSiteStatus);
+  
+  const sliderSpan = document.createElement('span');
+  sliderSpan.className = 'slider';
+  
+  // Create delete button
+  const deleteBtn = document.createElement('div');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.addEventListener('click', deleteSite);
+  
+  // Assemble the elements
+  switchLabel.appendChild(checkbox);
+  switchLabel.appendChild(sliderSpan);
+  
+  statusIndicator.appendChild(statusLed);
+  statusIndicator.appendChild(statusText);
+  statusIndicator.appendChild(switchLabel);
+  statusIndicator.appendChild(deleteBtn);
+  
+  newRow.appendChild(siteNameDiv);
+  newRow.appendChild(statusIndicator);
+  
+  sitesList.appendChild(newRow);
+}
+
+// Delete a site
+function deleteSite(event) {
+  // Get the closest parent element with class 'site-row'
+  const siteRow = event.target.closest('.site-row');
+  if (siteRow) {
+    // Reset timer when deleting a site
+    startTimer();
+    
+    // Remove the row
+    siteRow.remove();
+    
+    // Update the site count
+    updateSiteCount();
+    
+    // Save changes
+    saveSites();
+  }
+}
+
+// Add a new site
+function addNewSite() {
   const newSiteInput = document.getElementById('new-site');
-  const addButton = document.getElementById('add-button');
-  const statusDiv = document.getElementById('status');
+  let siteName = newSiteInput.value.trim();
   
-  // Load blocked sites from storage
-  function loadBlockedSites() {
-    chrome.storage.sync.get('blockedSites', function(data) {
-      const blockedSites = data.blockedSites || [];
-      renderSitesList(blockedSites);
-    });
+  if (siteName) {
+    // Format the URL for blocking
+    siteName = formatUrlForBlocking(siteName);
+    
+    // Reset timer when adding a site
+    startTimer();
+    
+    // Add to UI
+    addSiteToUI(siteName, true);
+    
+    // Clear input
+    newSiteInput.value = '';
+    
+    // Update site count
+    updateSiteCount();
+    
+    // Save changes
+    saveSites();
+  }
+}
+
+// Toggle site status (blocked/allowed)
+function toggleSiteStatus(event) {
+  // Reset timer when toggling
+  startTimer();
+  
+  const checkbox = event.target;
+  const statusIndicator = checkbox.closest('.status-indicator');
+  
+  const statusLed = statusIndicator.querySelector('.status-led');
+  const statusText = statusIndicator.querySelector('.status-text');
+  
+  if (checkbox.checked) {
+    statusLed.className = 'status-led red';
+    statusText.textContent = 'BLOCKED';
+  } else {
+    statusLed.className = 'status-led green';
+    statusText.textContent = 'ALLOWED';
   }
   
-  // Render the list of sites with toggle switches
-  function renderSitesList(sites) {
-    sitesList.innerHTML = '';
-    
-    if (sites.length === 0) {
-      const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = 'No websites added yet. Add one below!';
-      emptyMessage.style.color = '#666';
-      sitesList.appendChild(emptyMessage);
-      return;
-    }
-    
-    sites.forEach(function(site, index) {
-      const siteRow = document.createElement('div');
-      siteRow.className = 'site-row';
-      
-      const siteName = document.createElement('div');
-      siteName.className = 'site-name';
-      siteName.textContent = site.url;
-      
-      const toggleSwitch = document.createElement('label');
-      toggleSwitch.className = 'switch';
-      
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = site.enabled;
-      checkbox.dataset.index = index;
-      
-      checkbox.addEventListener('change', function() {
-        updateSiteStatus(index, this.checked);
-        showStatus(site.url + ' ' + (this.checked ? 'blocked' : 'unblocked'));
-      });
-      
-      const slider = document.createElement('span');
-      slider.className = 'slider';
-      
-      const deleteBtn = document.createElement('span');
-      deleteBtn.textContent = '×';
-      deleteBtn.style.cursor = 'pointer';
-      deleteBtn.style.color = '#999';
-      deleteBtn.style.fontSize = '18px';
-      deleteBtn.style.marginLeft = '8px';
-      deleteBtn.title = 'Delete';
-      
-      deleteBtn.addEventListener('click', function() {
-        deleteSite(index);
-      });
-      
-      toggleSwitch.appendChild(checkbox);
-      toggleSwitch.appendChild(slider);
-      
-      siteRow.appendChild(siteName);
-      siteRow.appendChild(toggleSwitch);
-      siteRow.appendChild(deleteBtn);
-      
-      sitesList.appendChild(siteRow);
-    });
-  }
+  // Save changes
+  saveSites();
+}
+
+// Initialize when page is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved sites
+  loadSites();
   
-  // Update the enabled status of a site
-  function updateSiteStatus(index, enabled) {
-    chrome.storage.sync.get('blockedSites', function(data) {
-      const blockedSites = data.blockedSites || [];
-      blockedSites[index].enabled = enabled;
-      chrome.storage.sync.set({ blockedSites: blockedSites });
-    });
-  }
+  // Start timer
+  startTimer();
   
-  // Delete a site from the list
-  function deleteSite(index) {
-    chrome.storage.sync.get('blockedSites', function(data) {
-      const blockedSites = data.blockedSites || [];
-      const url = blockedSites[index].url;
-      blockedSites.splice(index, 1);
-      chrome.storage.sync.set({ blockedSites: blockedSites }, function() {
-        loadBlockedSites();
-        showStatus(url + ' removed');
-      });
-    });
-  }
+  // Initialize clock and set update interval
+  updateClock();
+  setInterval(updateClock, 1000);
   
-  // Add a new site to block
-  function addNewSite() {
-    let url = newSiteInput.value.trim();
-    
-    if (!url) {
-      showStatus('Please enter a valid URL');
-      return;
-    }
-    
-    // Clean up the URL (remove http://, https://, www., etc.)
-    url = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
-    
-    // Remove trailing slash and everything after
-    url = url.split('/')[0];
-    
-    chrome.storage.sync.get('blockedSites', function(data) {
-      const blockedSites = data.blockedSites || [];
-      
-      // Check if site already exists
-      const exists = blockedSites.some(site => site.url === url);
-      
-      if (exists) {
-        showStatus(url + ' is already in your list');
-        return;
-      }
-      
-      blockedSites.push({ url: url, enabled: true });
-      chrome.storage.sync.set({ blockedSites: blockedSites }, function() {
-        loadBlockedSites();
-        newSiteInput.value = '';
-        showStatus(url + ' added and blocked');
-      });
-    });
-  }
+  // Add button click event
+  document.getElementById('add-button').addEventListener('click', addNewSite);
   
-  // Show status message
-  function showStatus(message) {
-    statusDiv.textContent = message;
-    setTimeout(() => {
-      statusDiv.textContent = '';
-    }, 3000);
-  }
-  
-  // Event listeners
-  addButton.addEventListener('click', addNewSite);
-  newSiteInput.addEventListener('keyup', function(event) {
-    if (event.key === 'Enter') {
+  // Add event listener for Enter key in input
+  document.getElementById('new-site').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
       addNewSite();
-    }
-  });
-  
-  // Initial load
-  loadBlockedSites();
-});
-
-// background.js
-chrome.runtime.onInstalled.addListener(function() {
-  // Initialize storage with default values
-  const defaultSites = [
-    { url: 'x.com', enabled: false },
-    { url: 'instagram.com', enabled: false },
-    { url: 'reddit.com', enabled: false },
-    { url: 'youtube.com', enabled: false }
-  ];
-  
-  chrome.storage.sync.get('blockedSites', function(data) {
-    if (!data.blockedSites) {
-      chrome.storage.sync.set({ blockedSites: defaultSites });
-    }
-  });
-});
-
-// Listen for navigation events
-chrome.webNavigation.onBeforeNavigate.addListener(function(details) {
-  // Only apply to main frame navigations (not iframes, etc.)
-  if (details.frameId !== 0) return;
-  
-  chrome.storage.sync.get('blockedSites', function(data) {
-    const blockedSites = data.blockedSites || [];
-    const url = new URL(details.url);
-    
-    // Check if the URL matches any enabled blocked sites
-    const matchedSite = blockedSites.find(site => 
-      site.enabled && (url.hostname === site.url || url.hostname.endsWith('.' + site.url))
-    );
-    
-    if (matchedSite) {
-      // Redirect to the lilu.png image instead of blocked.html
-      chrome.tabs.update(details.tabId, {
-        url: chrome.runtime.getURL('lilu.png')
-      });
     }
   });
 });

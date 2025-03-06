@@ -3,7 +3,8 @@
   "name": "shut the fuck up and work",
   "version": "1.0",
   "description": "title text",
-  "permissions": ["storage", "webNavigation", "tabs"],
+  "permissions": ["storage", "webNavigation", "tabs", "declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -15,5 +16,20 @@
   },
   "icons": {
     "48": "icon48.png"
-  }
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lilu.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

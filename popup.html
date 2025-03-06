@@ -1,36 +1,320 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>lock tf in.</title>
+  <title>NERV SYSTEM - SITE LOCKDOWN</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    
+    :root {
+      --nerv-red: #e74242;
+      --nerv-orange: #f8a030;
+      --nerv-yellow: #ffd25a;
+      --nerv-green: #4dbd74;
+      --nerv-black: #121214;
+      --nerv-dark: #252527;
+      --nerv-gray: #444446;
+      --nerv-light: #d6d3c8;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      width: 300px;
-      padding: 15px;
+      font-family: 'Share Tech Mono', monospace;
+      background-color: var(--nerv-black);
+      color: var(--nerv-light);
+      width: 350px;
+      padding: 20px;
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      filter: brightness(0.95) contrast(1.05);
+    }
+    
+    /* Background grid pattern */
+    .background-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(0deg, transparent 24%, rgba(248, 160, 48, 0.04) 25%, rgba(248, 160, 48, 0.04) 26%, transparent 27%, transparent 74%, rgba(248, 160, 48, 0.04) 75%, rgba(248, 160, 48, 0.04) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(248, 160, 48, 0.04) 25%, rgba(248, 160, 48, 0.04) 26%, transparent 27%, transparent 74%, rgba(248, 160, 48, 0.04) 75%, rgba(248, 160, 48, 0.04) 76%, transparent 77%, transparent);
+      background-size: 30px 30px;
+      z-index: -1;
+      opacity: 0.7;
+    }
+    
+    /* CRT scan line effect */
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(18, 18, 20, 0) 50%,
+        rgba(18, 18, 20, 0.02) 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    /* Monitor flicker effect */
+    .flicker {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.95;
+      pointer-events: none;
+      z-index: 11;
+      animation: flicker 8s infinite;
+      background-color: transparent;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Header styles */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 25px;
+      border-bottom: 2px solid var(--nerv-red);
+      padding-bottom: 10px;
+    }
+    
+    .title-container {
+      flex: 1;
     }
     
     h1 {
-      font-size: 18px;
-      margin-bottom: 15px;
+      font-size: 26px;
+      text-transform: uppercase;
+      margin: 0 0 5px 0;
+      color: var(--nerv-orange);
+      letter-spacing: 2px;
+      text-shadow: 0 0 5px rgba(248, 160, 48, 0.7);
+      font-weight: normal;
+    }
+    
+    .subtitle {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--nerv-light);
+      letter-spacing: 1px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      opacity: 0.8;
+    }
+    
+    .subtitle::before {
+      content: "内部 | INTERNAL";
+      display: inline-block;
+      margin-right: 5px;
+      padding: 1px 3px;
+      background-color: var(--nerv-red);
+      color: var(--nerv-light);
+      font-size: 8px;
+      letter-spacing: 0;
+      opacity: 0.9;
+    }
+    
+    /* Digital clock */
+    .digital-clock {
+      position: absolute;
+      top: 5px;
+      right: 110px;
+      font-size: 11px;
+      color: var(--nerv-yellow);
+      text-shadow: 0 0 4px rgba(255, 210, 90, 0.6);
+      font-weight: normal;
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 1px 3px;
+      border: 1px solid rgba(255, 210, 90, 0.3);
+    }
+    
+    /* Globe styles */
+    .globe-container {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 80px;
+      height: 80px;
+      perspective: 800px;
+      z-index: 1;
+    }
+    
+    .globe {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotateSphere 20s linear infinite;
+    }
+    
+    .sphere {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1.5px solid var(--nerv-orange);
+      box-sizing: border-box;
+      opacity: 0.8;
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+    
+    /* Longitude lines */
+    .longitude {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border-left: 1.5px solid var(--nerv-orange);
+      border-right: 1.5px solid var(--nerv-orange);
+      opacity: 0.6;
+      box-sizing: border-box;
+    }
+    
+    .longitude-1 { transform: rotateY(0deg); }
+    .longitude-2 { transform: rotateY(30deg); }
+    .longitude-3 { transform: rotateY(60deg); }
+    .longitude-4 { transform: rotateY(90deg); }
+    .longitude-5 { transform: rotateY(120deg); }
+    .longitude-6 { transform: rotateY(150deg); }
+    
+    /* Latitude lines */
+    .latitude {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border-top: 1.5px solid var(--nerv-orange);
+      border-bottom: 1.5px solid var(--nerv-orange);
+      opacity: 0.6;
+      box-sizing: border-box;
+    }
+    
+    .latitude-1 { transform: rotateX(0deg); }
+    .latitude-2 { transform: rotateX(30deg); }
+    .latitude-3 { transform: rotateX(60deg); }
+    .latitude-4 { transform: rotateX(90deg); }
+    .latitude-5 { transform: rotateX(120deg); }
+    .latitude-6 { transform: rotateX(150deg); }
+    
+    /* Sites list */
+    .sites-list {
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .sites-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .sites-list::-webkit-scrollbar-track {
+      background: var(--nerv-dark);
+    }
+    
+    .sites-list::-webkit-scrollbar-thumb {
+      background-color: var(--nerv-orange);
+      border-radius: 3px;
     }
     
     .site-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 5px;
-      border-bottom: 1px solid #eee;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--nerv-gray);
+      border-left: 3px solid transparent;
+      transition: background-color 0.3s, border-left-color 0.3s;
+      position: relative;
+    }
+    
+    .site-row:hover {
+      background-color: rgba(255, 106, 0, 0.1);
+      border-left-color: var(--nerv-orange);
+    }
+    
+    .site-row::before {
+      content: "SITE:";
+      font-size: 8px;
+      position: absolute;
+      top: 2px;
+      left: 0;
+      color: var(--nerv-yellow);
+      opacity: 0.7;
     }
     
     .site-name {
       font-size: 14px;
+      color: var(--nerv-light);
+      letter-spacing: 1px;
+      text-shadow: 0 0 1px rgba(214, 211, 200, 0.5);
     }
     
+    .status-indicator {
+      display: flex;
+      align-items: center;
+    }
+    
+    .status-led {
+      width: 15px;
+      height: 15px;
+      border-radius: 2px;
+      margin-right: 4px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s;
+    }
+    
+    .status-led::after {
+      content: "";
+      position: absolute;
+      width: 60%;
+      height: 60%;
+      top: 20%;
+      left: 20%;
+      background-color: currentColor;
+      filter: blur(1px);
+      opacity: 0.8;
+    }
+    
+    .status-led.red {
+      background-color: rgba(231, 66, 66, 0.3);
+      color: var(--nerv-red);
+      box-shadow: 0 0 4px rgba(231, 66, 66, 0.6);
+    }
+    
+    .status-led.green {
+      background-color: rgba(77, 189, 116, 0.3);
+      color: var(--nerv-green);
+      box-shadow: 0 0 4px rgba(77, 189, 116, 0.6);
+    }
+    
+    .status-text {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--nerv-light);
+      opacity: 0.8;
+    }
+    
+    /* Toggle switch */
     .switch {
       position: relative;
       display: inline-block;
-      width: 40px;
-      height: 22px;
+      width: 50px;
+      height: 24px;
+      margin-left: 10px;
     }
     
     .switch input {
@@ -46,75 +330,265 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
+      background-color: var(--nerv-dark);
       transition: .3s;
-      border-radius: 22px;
+      border: 1px solid var(--nerv-gray);
+      overflow: hidden;
     }
     
     .slider:before {
       position: absolute;
       content: "";
-      height: 16px;
-      width: 16px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--nerv-light);
       transition: .3s;
-      border-radius: 50%;
+      z-index: 2;
     }
     
-    input:checked + .slider {
-      background-color: #2196F3;
+    .slider::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(231, 66, 66, 0.6);
+      transform: translateX(-100%);
+      transition: .3s;
+    }
+    
+    input:checked + .slider::after {
+      transform: translateX(0);
     }
     
     input:checked + .slider:before {
-      transform: translateX(18px);
+      transform: translateX(26px);
     }
     
+    /* Delete button */
+    .delete-btn {
+      margin-left: 8px;
+      width: 16px;
+      height: 16px;
+      position: relative;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    
+    .delete-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    
+    .delete-btn::before,
+    .delete-btn::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 2px;
+      background-color: var(--nerv-red);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      box-shadow: 0 0 3px rgba(231, 66, 66, 0.6);
+    }
+    
+    .delete-btn::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
+    }
+    
+    /* Add site form */
     .add-site {
       margin-top: 15px;
       display: flex;
+      position: relative;
+      z-index: 2;
     }
     
     .add-site input {
       flex: 1;
-      padding: 6px 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 8px 10px;
+      border: 1px solid var(--nerv-gray);
+      background-color: rgba(18, 18, 20, 0.7);
+      color: var(--nerv-light);
       font-size: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      position: relative;
+    }
+    
+    .add-site input::placeholder {
+      color: rgba(214, 211, 200, 0.4);
+    }
+    
+    .add-site input:focus {
+      outline: none;
+      border-color: var(--nerv-orange);
+      box-shadow: 0 0 4px rgba(248, 160, 48, 0.5);
     }
     
     .add-site button {
-      padding: 6px 10px;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 4px;
+      padding: 7px 10px;
+      background-color: var(--nerv-red);
+      color: var(--nerv-light);
+      border: 1px solid rgba(231, 66, 66, 0.3);
       cursor: pointer;
-      margin-left: 5px;
+      margin-left: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 5px rgba(231, 66, 66, 0.4);
     }
     
+    /* Status bar */
     .status {
-      margin-top: 10px;
+      margin-top: 15px;
       font-size: 12px;
-      color: #777;
+      color: var(--nerv-orange);
+      padding: 5px 0;
+      border-top: 1px solid var(--nerv-gray);
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .status::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--nerv-orange);
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: statusPulse 2s infinite;
+    }
+    
+    /* Animations */
+    @keyframes rotateSphere {
+      0% { transform: rotateX(0deg) rotateY(0deg); }
+      100% { transform: rotateX(360deg) rotateY(360deg); }
+    }
+    
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 3px rgba(248, 160, 48, 0.4); }
+      50% { box-shadow: 0 0 8px rgba(248, 160, 48, 0.6); }
+      100% { box-shadow: 0 0 3px rgba(248, 160, 48, 0.4); }
+    }
+    
+    @keyframes statusPulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+    
+    @keyframes flicker {
+      0% { opacity: 0.95; }
+      3% { opacity: 0.9; }
+      5% { opacity: 0.95; }
+      10% { opacity: 0.9; }
+      15% { opacity: 0.95; }
+      80% { opacity: 0.95; }
+      90% { opacity: 0.8; }
+      100% { opacity: 0.95; }
+    }
+    
+    @keyframes updateClock {
+      0% { opacity: 1; }
+      90% { opacity: 1; }
+      95% { opacity: 0.3; }
+      100% { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <h1>lock tf in.</h1>
+  <div class="background-pattern"></div>
+  <div class="scan-line"></div>
+  <div class="flicker"></div>
   
-  <div id="sites-list">
-    <!-- Site toggles will be added here by JavaScript -->
+  <div class="container">
+    <div class="header">
+      <div class="title-container">
+        <h1 id="timer">00:00</h1>
+        <p class="subtitle">Website Lockdown System</p>
+      </div>
+    </div>
+    
+    <div class="digital-clock" id="clock">15:37:21</div>
+    
+    <div class="sites-list" id="sites-list">
+      <!-- Site toggles will be added here by JavaScript -->
+      <div class="site-row" data-site="facebook.com">
+        <div class="site-name">facebook.com</div>
+        <div class="status-indicator">
+          <div class="status-led red"></div>
+          <div class="status-text">BLOCKED</div>
+          <label class="switch">
+            <input type="checkbox" checked class="toggle-switch">
+            <span class="slider"></span>
+          </label>
+          <div class="delete-btn"></div>
+        </div>
+      </div>
+      <div class="site-row" data-site="twitter.com">
+        <div class="site-name">twitter.com</div>
+        <div class="status-indicator">
+          <div class="status-led red"></div>
+          <div class="status-text">BLOCKED</div>
+          <label class="switch">
+            <input type="checkbox" checked class="toggle-switch">
+            <span class="slider"></span>
+          </label>
+          <div class="delete-btn"></div>
+        </div>
+      </div>
+      <div class="site-row" data-site="youtube.com">
+        <div class="site-name">youtube.com</div>
+        <div class="status-indicator">
+          <div class="status-led green"></div>
+          <div class="status-text">ALLOWED</div>
+          <label class="switch">
+            <input type="checkbox" class="toggle-switch">
+            <span class="slider"></span>
+          </label>
+          <div class="delete-btn"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="add-site">
+      <input type="text" id="new-site" placeholder="[Enter target site]">
+      <button id="add-button">ADD</button>
+    </div>
+    
+    <div id="status" class="status">SYSTEM ACTIVE - 3 SITES MONITORED</div>
   </div>
   
-  <div class="add-site">
-    <input type="text" id="new-site" placeholder="Add website (e.g., facebook.com)">
-    <button id="add-button">Add</button>
+  <div class="globe-container">
+    <div class="globe">
+      <div class="sphere"></div>
+      <div class="longitude longitude-1"></div>
+      <div class="longitude longitude-2"></div>
+      <div class="longitude longitude-3"></div>
+      <div class="longitude longitude-4"></div>
+      <div class="longitude longitude-5"></div>
+      <div class="longitude longitude-6"></div>
+      <div class="latitude latitude-1"></div>
+      <div class="latitude latitude-2"></div>
+      <div class="latitude latitude-3"></div>
+      <div class="latitude latitude-4"></div>
+      <div class="latitude latitude-5"></div>
+      <div class="latitude latitude-6"></div>
+    </div>
   </div>
-  
-  <div id="status" class="status"></div>
-  
+
+  <!-- Link to external JavaScript file -->
   <script src="popup.js"></script>
 </body>
 </html>
