@@ -1,10 +1,11 @@
 // Global variables
 let timerInterval;
 let timerSeconds = 0;
+let timerStartTime = 0;
 
 // Load sites from storage when popup opens
 function loadSites() {
-  chrome.storage.sync.get(['blockedSites'], function(result) {
+  chrome.storage.sync.get(['blockedSites', 'timerData'], function(result) {
     const sites = result.blockedSites || [];
     
     // Clear current list
@@ -17,6 +18,26 @@ function loadSites() {
     
     // Update site count
     updateSiteCount();
+    
+    // Load timer data if it exists
+    if (result.timerData) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - result.timerData.startTime) / 1000);
+      
+      // Only restore if timer was running and less than 24 hours have passed
+      if (result.timerData.isRunning && elapsed < 86400) {
+        timerSeconds = elapsed;
+        timerStartTime = result.timerData.startTime;
+        updateTimerDisplay();
+        startTimerFromSaved();
+      } else {
+        // Reset timer if it was stopped or too much time passed
+        startTimer();
+      }
+    } else {
+      // Start a new timer if no saved data
+      startTimer();
+    }
   });
 }
 
@@ -36,16 +57,45 @@ function saveSites() {
   });
 }
 
+// Save timer state
+function saveTimerState(isRunning) {
+  chrome.storage.sync.set({ 
+    'timerData': {
+      startTime: timerStartTime,
+      isRunning: isRunning
+    }
+  }, function() {
+    console.log('Timer state saved');
+  });
+}
+
 // Function to start/reset timer
 function startTimer() {
   clearInterval(timerInterval);
   timerSeconds = 0;
+  timerStartTime = Date.now();
   updateTimerDisplay();
   
   timerInterval = setInterval(function() {
     timerSeconds++;
     updateTimerDisplay();
   }, 1000);
+  
+  // Save timer state
+  saveTimerState(true);
+}
+
+// Function to resume timer from saved state
+function startTimerFromSaved() {
+  clearInterval(timerInterval);
+  
+  timerInterval = setInterval(function() {
+    timerSeconds++;
+    updateTimerDisplay();
+  }, 1000);
+  
+  // Save timer state
+  saveTimerState(true);
 }
 
 // Update timer display
@@ -209,13 +259,15 @@ function toggleSiteStatus(event) {
   saveSites();
 }
 
+// Handle popup closing
+window.addEventListener('beforeunload', function() {
+  saveTimerState(true);
+});
+
 // Initialize when page is loaded
 document.addEventListener('DOMContentLoaded', function() {
-  // Load saved sites
+  // Load saved sites and timer state
   loadSites();
-  
-  // Start timer
-  startTimer();
   
   // Initialize clock and set update interval
   updateClock();
